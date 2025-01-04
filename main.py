@@ -1,54 +1,59 @@
 import streamlit as st
-import PyPDF2
 import requests
-from PIL import Image
-from io import BytesIO
+import PyPDF2
 
 # Function to extract text from PDF
 def extract_text_from_pdf(pdf_file):
-    reader = PyPDF2.PdfReader(pdf_file)
+    pdf_reader = PyPDF2.PdfReader(pdf_file)
     text = ""
-    for page in reader.pages:
+    for page in pdf_reader.pages:
         text += page.extract_text()
     return text
 
-# Function to summarize text using the API
+# Function to summarize text using an API
 def summarize_text(text):
-    api_url = "YOUR_API_ENDPOINT"  # Replace with your actual API URL
-    headers = {"Content-Type": "application/json"}
-    data = {"text": text}
+    # Yeh URL apne API ka daalna hai
+    api_url = 'https://YOUR_API_ENDPOINT'  # Yeh apne API ka endpoint daalna hai
+    data = {'text': text}
     
-    response = requests.post(api_url, json=data, headers=headers)
-    if response.status_code == 200:
-        return response.json().get("summary", "Error: Summary not found.")
-    else:
-        return "Error: Unable to summarize."
-
-# Streamlit UI
-st.title("PDF Summarizer Web App")
-
-# PDF upload
-uploaded_file = st.file_uploader("Upload your PDF", type=["pdf"])
-if uploaded_file is not None:
-    # Extract text from the PDF
-    text = extract_text_from_pdf(uploaded_file)
+    # Agar API key chahiye, toh headers mein daalna padega
+    headers = {
+        'Authorization': 'Bearer YOUR_API_KEY',  # Agar API key chahiye toh yeh daalna
+        'Content-Type': 'application/json'
+    }
     
-    # Display extracted images
     try:
-        # Show the first page as an image (if available)
-        image = Image.open(BytesIO(uploaded_file.read()))
-        st.image(image, caption="Uploaded PDF Image", use_column_width=True)
-    except Exception as e:
-        st.write(f"Error displaying image: {e}")
+        # API ko request bhejna
+        response = requests.post(api_url, json=data, headers=headers)
+        response.raise_for_status()  # Agar kuch galat hua, toh error aayega
+        summary = response.json().get('summary', 'No summary found')  # Summary nikaalna
+        return summary
+    except requests.exceptions.RequestException as err:
+        return f"Error occurred: {err}"
 
-    st.subheader("Extracted Text")
-    st.write(text)
-
-    # Summarize Text Button
-    if st.button("Summarize Text"):
+# Streamlit app setup
+def main():
+    st.title("PDF Summarizer")
+    
+    # PDF upload karne ka option dena
+    pdf_file = st.file_uploader("Upload a PDF file", type="pdf")
+    
+    if pdf_file is not None:
+        # PDF ka text extract karna
+        text = extract_text_from_pdf(pdf_file)
+        
         if text:
+            st.write("Extracted Text from PDF:")
+            st.write(text[:1000])  # Sirf 1000 characters ka preview dikhana
+            # Summary banana
             summary = summarize_text(text)
-            st.subheader("AI Summary")
+            st.write("Summary:")
             st.write(summary)
         else:
-            st.warning("No text extracted from the PDF.")
+            st.write("No text found in the PDF.")
+    
+    else:
+        st.write("Please upload a PDF file.")
+
+if __name__ == '__main__':
+    main()
