@@ -12,22 +12,34 @@ def extract_text_from_pdf(pdf_file):
 
 # Function to summarize text using an API
 def summarize_text(text):
-    # Yeh URL apne API ka daalna hai
-    api_url = 'https://YOUR_API_ENDPOINT'  # Yeh apne API ka endpoint daalna hai
-    data = {'text': text}
+    # Replace this with your actual API endpoint
+    api_url = 'https://api.openai.com/v1/completions'  # OpenAI API endpoint example
     
-    # Agar API key chahiye, toh headers mein daalna padega
-    headers = {
-        'Authorization': 'Bearer YOUR_API_KEY',  # Agar API key chahiye toh yeh daalna
-        'Content-Type': 'application/json'
+    # Your API key
+    api_key = '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'
+
+    # Data format for the request
+    data = {
+        "model": "text-davinci-003",  # Or whatever model you are using (like GPT-3)
+        "prompt": text,
+        "max_tokens": 1000  # Adjust as per your needs
     }
     
+    # Headers for the API request
+    headers = {
+        'Authorization': f'Bearer {api_key}',
+        'Content-Type': 'application/json'
+    }
+
     try:
-        # API ko request bhejna
+        # Sending POST request to the API
         response = requests.post(api_url, json=data, headers=headers)
-        response.raise_for_status()  # Agar kuch galat hua, toh error aayega
-        summary = response.json().get('summary', 'No summary found')  # Summary nikaalna
+        response.raise_for_status()  # Check if the request was successful
+        
+        # Extracting summary from the response
+        summary = response.json().get('choices')[0].get('text').strip()
         return summary
+    
     except requests.exceptions.RequestException as err:
         return f"Error occurred: {err}"
 
@@ -35,17 +47,16 @@ def summarize_text(text):
 def main():
     st.title("PDF Summarizer")
     
-    # PDF upload karne ka option dena
-    pdf_file = st.file_uploader("Upload a PDF file", type="pdf")
+    # PDF file uploader widget
+    pdf_file = st.file_uploader("Upload a PDF file", type=["pdf"])
     
     if pdf_file is not None:
-        # PDF ka text extract karna
+        # Extract text from the uploaded PDF
         text = extract_text_from_pdf(pdf_file)
         
         if text:
             st.write("Extracted Text from PDF:")
-            st.write(text[:1000])  # Sirf 1000 characters ka preview dikhana
-            # Summary banana
+            st.write(text[:1000])  # Display only first 1000 characters
             summary = summarize_text(text)
             st.write("Summary:")
             st.write(summary)
@@ -55,5 +66,6 @@ def main():
     else:
         st.write("Please upload a PDF file.")
 
+# Running the Streamlit app
 if __name__ == '__main__':
     main()
